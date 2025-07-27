@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const rows = 30;
-const cols = 30;
+const rows = 50;
+const cols = 50;
 const cellSize = canvas.width / cols;
 let grid = new Array(rows);
 for (let i = 0; i < rows; i++) {
@@ -87,7 +87,7 @@ function heuristic(a, b) {
 
 function updateNode(node) {
     node.h = heuristic(node, endNode);
-    node.f = node.g + 2*node.h;
+    node.f = node.g + 3*node.h;
     console.log(node.f, node.g, node.h);
 }
 
