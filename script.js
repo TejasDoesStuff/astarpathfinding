@@ -1,7 +1,7 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const rows = 15;
-const cols = 15;
+const rows = 30;
+const cols = 30;
 const cellSize = canvas.width / cols;
 let grid = new Array(rows);
 for (let i = 0; i < rows; i++) {
@@ -29,6 +29,7 @@ class Node {
         this.g = 0;
         this.h = 0;
         this.f = 0;
+        this.w = 0;
         this.previous = undefined;
         this.neighbors = [];
         this.wall = false;
@@ -67,6 +68,7 @@ function addNodes() {
     for(let y = 0; y < rows; y++) {
         for(let x = 0; x < cols; x++) {
             grid[y][x].findNeighbors(grid);
+            grid[y][x].w = 10*Math.random();
         }
     }
 }
@@ -85,7 +87,7 @@ function heuristic(a, b) {
 
 function updateNode(node) {
     node.h = heuristic(node, endNode);
-    node.f = node.g + node.h;
+    node.f = node.g + 2*node.h;
     console.log(node.f, node.g, node.h);
 }
 
@@ -94,7 +96,7 @@ let interval;
 function aStar() {
     startNode.g = 0;
     updateNode(startNode);
-    interval = setInterval(step, 5);
+    interval = setInterval(step, 1);
 }
 
 function step() {
@@ -125,7 +127,7 @@ function step() {
                 continue;
             }
 
-            let G = current.g + 1;
+            let G = current.g + current.w;
 
             if (!unexplored.includes(n)) {
                 n.g = G;
