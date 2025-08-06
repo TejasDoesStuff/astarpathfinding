@@ -3,10 +3,42 @@ const ctx = canvas.getContext('2d');
 const rows = 50;
 const cols = 50;
 const cellSize = canvas.width / cols;
+const startButton = document.querySelector('.buttons button:first-child');
+const resetButton = document.querySelector('.buttons button:last-child');
+
+let isMouseDown = false;
+let lastCell = null;
+
+let isRunning = false;
 let grid = new Array(rows);
 for (let i = 0; i < rows; i++) {
   grid[i] = new Array(cols);
 }
+
+startButton.addEventListener('click', toggleStart);
+resetButton.addEventListener('click', resetGrid);
+
+canvas.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    drawOnCanvas(e);
+});
+
+canvas.addEventListener('mouseup', () => {
+    isMouseDown = false;
+    lastCell = null;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    isMouseDown = false;
+    lastCell = null;
+});
+
+
+canvas.addEventListener('mousemove', (e) => {
+    if (isMouseDown) {
+        drawOnCanvas(e);
+    }
+});
 
 function drawGrid() {
     for(let x = 0; x <= canvas.width; x += cellSize) {
@@ -68,7 +100,7 @@ function addNodes() {
     for(let y = 0; y < rows; y++) {
         for(let x = 0; x < cols; x++) {
             grid[y][x].findNeighbors(grid);
-            grid[y][x].w = 10*Math.random();
+            grid[y][x].w = 10 * Math.random();
         }
     }
 }
@@ -96,6 +128,8 @@ let interval;
 function aStar() {
     startNode.g = 0;
     updateNode(startNode);
+    isRunning = true;
+    startButton.textContent = 'Pause';
     interval = setInterval(step, 1);
 }
 
@@ -114,6 +148,8 @@ function step() {
                 pathNode = pathNode.previous;
             }
             clearInterval(interval);
+            isRunning = false;
+            startButton.textContent = 'Start';
             return;
         }
 
@@ -146,16 +182,87 @@ function step() {
     }
     else {
         clearInterval(interval);
+        isRunning = false;
+        startButton.textContent = 'Start';
+        console.log("No path found!");
     }
 }
 
-function drawNode(node, color) {
+function toggleStart() {
+    if (!isRunning) {
+        if (unexplored.length === 0) {
+            resetGrid();
+        }
+        aStar();
+    } else {
+        clearInterval(interval);
+        isRunning = false;
+        startButton.textContent = 'Resume';
+    }
+}
+
+function resetGrid() {
+    clearInterval(interval);
+    isRunning = false;
+    startButton.textContent = 'Start';
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    addNodes();
+    
+    startNode = grid[0][0];
+    endNode = grid[rows - 1][cols - 1];
+    
+    unexplored = [startNode];
+    explored = [];
+    
+    drawGrid();
+    drawNode(startNode, "blue", true);
+    drawNode(endNode, "red", true);
+}
+
+function drawOnCanvas(event) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    const col = Math.floor(mouseX / cellSize);
+    const row = Math.floor(mouseY / cellSize);
+
+    if(col >= 0 && col < cols && row >= 0 && row < rows) {
+        const clickedNode = grid[row][col];
+        
+        if (!lastCell || lastCell !== clickedNode) {
+            lastCell = clickedNode;
+            toggleWall(clickedNode);
+        }
+    }
+}
+
+
+function toggleWall(node) {
+    if ((node === startNode) || (node === endNode)) return;
+    
+    node.wall = !node.wall;
+    
+    if (node.wall) {
+        drawNode(node, "black");
+    } else {
+        drawNode(node, "white", true);
+    }
+}
+
+function drawNode(node, color, withStroke = false) {
     ctx.fillStyle = color;
     ctx.globalAlpha = 1;
     ctx.fillRect(node.x * cellSize, node.y * cellSize, cellSize, cellSize);
+
+    if (withStroke) {
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(node.x * cellSize, node.y * cellSize, cellSize, cellSize);
+    }
 }
 
 drawGrid();
-drawNode(startNode, "blue");
-drawNode(endNode, "red");
-aStar();
+drawNode(startNode, "blue", true);
+drawNode(endNode, "red", true);
